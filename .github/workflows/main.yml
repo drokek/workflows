@@ -8,6 +8,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: List files in work Directory
+        run: ls -la ./
+        
       - name: Checkout
         uses: actions/checkout@v2
 
