@@ -41,33 +41,3 @@ jobs:
         with:
           command: "android debug"
           workdir: ./other-repo  # Путь к клонированному репозиторию
-
-
-
-name: Build
-on: [push, pull_request]
-
-jobs:
-  build-android:
-    name: Build for Android
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout current repository
-        uses: actions/checkout@v2
-
-      - name: Clone additional repository
-        run: git clone https://github.com/drokek/workflows other-repo
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: List files in other-repo directory
-        run: ls -la other-repo
-
-      - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
-        with:
-          command: "android debug"
-          workdir: ./other-repo  # Путь к клонированному репозиторию
-          
