@@ -16,4 +16,4 @@ jobs:
         id: buildozer
         with:
           command: buildozer android debug
-          workdir: workflows
+          workdir: ./
