@@ -10,6 +10,52 @@ jobs:
       - name: Checkout current repository
         uses: actions/checkout@v2
 
+      - name: Install OpenJDK
+        run: sudo apt-get install -y openjdk-11-jdk
+
+      - name: Install Android SDK
+        run: |
+          wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
+          mkdir -p $HOME/cmdline-tools
+          unzip commandlinetools-linux-7302050_latest.zip -d $HOME/cmdline-tools
+          yes | $HOME/cmdline-tools/cmdline-tools/bin/sdkmanager --sdk_root=$HOME/cmdline-tools "platform-tools" "platforms;android-30" "build-tools;30.0.3"
+        env:
+          ANDROID_HOME: $HOME/cmdline-tools
+
+      - name: Set up environment variables
+        run: |
+          echo "ANDROID_HOME=$HOME/cmdline-tools" >> $GITHUB_ENV
+          echo "PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/30.0.3:\$PATH" >> $GITHUB_ENV
+
+      - name: Clone additional repository
+        run: git clone https://github.com/drokek/workflows other-repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List files in other-repo directory
+        run: ls -la other-repo
+
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: "android debug"
+          workdir: ./other-repo  # Путь к клонированному репозиторию
+
+
+
+name: Build
+on: [push, pull_request]
+
+jobs:
+  build-android:
+    name: Build for Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v2
+
       - name: Clone additional repository
         run: git clone https://github.com/drokek/workflows other-repo
         env:
