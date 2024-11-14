@@ -9,7 +9,7 @@ jobs:
     steps:
       - name: Checkout current repository
         uses: actions/checkout@v3
-        
+
       - name: Update package list
         run: sudo apt-get update
 
@@ -52,3 +52,4 @@ jobs:
         with:
           command: "android debug"
           workdir: ./other-repo  # Путь к клонированному репозиторию
+          
