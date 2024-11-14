@@ -1,193 +1,129 @@
-import kivy
+import pandas as pd
 from kivy.app import App
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
 from kivy.uix.popup import Popup
-from kivy.uix.filechooser import FileChooserListView
-from kivy.uix import filechooser
-import pandas as pd
-import os
 
-# Глобальные переменные для хранения данных
-participants = []
-current_pair_index = 0
-scores = {}
-grouppath = ""
-groupname = ""
+# Глобальные переменные для хранения оценок и данных участников
+scores = []
+score_entries = {}
+total_scores = pd.DataFrame({'Номер участника': [], 'Входы': [],'Тактика': [],'Акробатика': [],'Дистанция': [],'Техника': [],'Итоговый балл': [],})
 
-# Функция для загрузки CSV файла и обработки данных
+def update_score(participant, field, delta):
+    """Функция для изменения значения оценки."""
+    entry = score_entries[participant][field]
+    current_value = int(entry.text)
+#    new_value = max(0, current_value + delta)  # Ограничение для значений ≥ 0
+    new_value = current_value + delta
+    entry.text = str(new_value)
 
+def save_current_pair():
+    """Сохраняет текущую пару участников и их результаты."""
+    global scores, total_scores
 
-def load_csv_file(instance):
-    global participants, current_pair_index, scores, grouppath, groupname
-    filechooser = FileChooserListView()
-    select_button = Button(text="Выбрать файл", size_hint=(1, 0.1))
-    label = Label(text="Выберите CSV файл", size_hint=(1, 0.1))
-    chooser_layout = BoxLayout(orientation='vertical')
-    chooser_layout.add_widget(filechooser)
-    chooser_layout.add_widget(select_button)
-    chooser_layout.add_widget(label)
-    popup = Popup(title="Выберите CSV файл", content=chooser_layout, size_hint=(0.9, 0.9))
-    def on_file_selected(button_instance):
-        global grouppath
-        selected_file = filechooser.selection
-        if selected_file:
-            selected_file_path = selected_file[0]
-            label.text = f'Выбрано: {selected_file[0]}'
-            popup.dismiss()
+    participant1_number = participant1_label.text
+    participant2_number = participant2_label.text
+
+    for i, participant in enumerate(["Участник 1", "Участник 2"]):
+        if i == 0:
+            entry_data = [participant1_number]
         else:
-            label.text = 'Файл не выбран'
-        
-        df = pd.read_csv(selected_file_path, header=None)
-        grouppath = selected_file_path
-        grouppath = grouppath[:-4]
-        parts1 = df[0].to_list()
-        parts2 = df[1].to_list()
-        for i in range(len(parts1)):
-            participants.append([parts1[i], parts2[i]])
-        
+            entry_data = [participant2_number]
+        total_score = 0
+        for field in score_entries[participant]:
+            score = int(score_entries[participant][field].text)
+            entry_data.append(score)
+            total_score += score
+        entry_data.append(total_score)
+        scores.append(entry_data)
+        total_scores = pd.concat([total_scores, pd.DataFrame([entry_data], columns=total_scores.columns)], ignore_index=True)
 
-        # Проверка на пустой файл
-        if not participants:
-            raise ValueError("Файл пуст или не содержит данных.")
-
-        # Инициализация словаря для хранения оценок
-        scores.clear()
-        scores.update({participant: {'Дистанция': 0, 'Входы': 0, 'Акробатика': 0, 'Техника': 0, 'Тактика': 0}
-                       for pair in participants for participant in pair})
-        current_pair_index = -1  # Устанавливаем индекс на -1, чтобы show_next_pair() увеличил его до 0
-        show_next_pair()
-        
-    select_button.bind(on_press=on_file_selected)
-    popup.open()
-
-
-# Функция для отображения следующей пары участников
-def show_next_pair():
-    global current_pair_index, participants
-    current_pair_index += 1
-
-    if current_pair_index >= len(participants):
-        export_results()
-        return
-
-    pair = participants[current_pair_index]
-    participant1_label.text = f"Участник {pair[0]}"
-    participant2_label.text = f"Участник {pair[1]}"
     reset_fields()
 
-# Функция для обновления оценок в поле
-def update_score(participant, field, increment):
-    current_value = int(score_entries[participant][field].text)
-    new_value = max(0, current_value + increment)  # Не позволяем числу быть отрицательным
-    score_entries[participant][field].text = str(new_value)
+    '''if participant1_number and participant2_number:
+        for participant in [participant1_number, participant2_number]:
+            entry_data = [participant]
+            total_score = 0
+            print(score_entries.keys())
+            for field in score_entries[participant]:
+                score = int(score_entries[participant][field].text)
+                entry_data.append(score)
+                total_score += score
+            entry_data.append(total_score)
+            scores.append(entry_data)
+        reset_fields()'''
 
-# Функция для обнуления полей
 def reset_fields():
+    print(total_scores)
+    """Сбрасывает поля ввода и обновляет метки участников."""
+    global participant1_label, participant2_label, score_entries
+    participant1_label.text = ""
+    participant2_label.text = ""
     for participant in score_entries:
         for field in score_entries[participant]:
             score_entries[participant][field].text = '0'
 
-# Функция для перехода к следующей паре и сохранения данных
-def next_pair(instance):
-    global current_pair_index, participants
-
-    print(score_entries.keys())
-    if current_pair_index < len(participants):
-        i = 0
-        for participant in score_entries.keys():
-            for field in score_entries[participant]:
-                number = participants[current_pair_index][i]
-                scores[number][field] = int(score_entries[participant][field].text)
-            i += 1
-    show_next_pair()
-
-# Функция для экспорта результатов в CSV файл
-'''def export_results():
+def save_results_to_csv():
+    """Сохраняет результаты в CSV файл и обнуляет данные."""
     global scores
 
-    data = []
-    for participant, fields in scores.items():
-        total_score = sum(fields.values())
-        row = [participant] + list(fields.values()) + [total_score]
-        data.append(row)
+    if scores:
+        columns = ['Номер участника', 'Входы', 'Тактика', 'Акробатика', 'Дистанция', 'Техника', 'Итоговый балл']
+        results_df = pd.DataFrame(scores, columns=columns)
 
-    columns = ['Номер участника', 'Дистанция', 'Входы', 'Техника', 'Тактика', 'Акробатика', 'Итоговый балл']
-    results_df = pd.DataFrame(data, columns=columns)
+        popup_content = BoxLayout(orientation='vertical')
+        filename_input = TextInput(hint_text="Введите название файла", multiline=False)
+        save_button = Button(text="Сохранить", on_press=lambda x: save_to_csv(filename_input.text, results_df))
 
-    def save_results(selected_path):
-        if selected_path:
-            results_df.to_csv(selected_path[0], index=False)
-            popup.dismiss()
-            Popup(title="Готово", content=Label(text="Результаты успешно сохранены!"), size_hint=(0.6, 0.3)).open()
-            filechooser = FileChooserListView(select_string='Сохранить')
-    filechooser.bind(on_submit=lambda f, s, *_: save_results(s))
+        popup_content.add_widget(filename_input)
+        popup_content.add_widget(save_button)
 
-    popup = Popup(title="Сохранить CSV файл", content=filechooser, size_hint=(0.9, 0.9))
-    popup.open()'''
+        popup = Popup(title="Сохранение файла", content=popup_content, size_hint=(0.6, 0.4))
+        popup.open()
 
-
-def export_results():
-    global scores, grouppath
-
-    data = []
-    for participant, fields in scores.items():
-        total_score = sum(fields.values())
-        row = [participant] + list(fields.values()) + [total_score]
-        data.append(row)
-    
-
-    columns = ['Номер участника', 'Дистанция', 'Входы', 'Техника', 'Тактика', 'Акробатика', 'Итоговый балл']
-    results_df = pd.DataFrame(data, columns=columns)
-    def save_results(instance):
-        nonlocal filename
-        path = grouppath + f"_{filename.text}.csv"
-        results_df.to_csv(path, index=False)
+def save_to_csv(filename, results_df):
+    """Сохраняет DataFrame в CSV файл."""
+    if filename:
+        results_df.to_csv(f"{filename}.csv", index=False)
         Popup(title="Готово", content=Label(text="Результаты успешно сохранены!"), size_hint=(0.6, 0.3)).open()
+        reset_all_data()
 
-    saver = BoxLayout(orientation='vertical')
-    filename = TextInput(hint_text="Введите номер судьи")
-    save_button = Button(text="Сохранить", on_press=save_results)
-    saver.add_widget(filename)
-    saver.add_widget(save_button)
+def reset_all_data():
+    """Сбрасывает все данные, возвращая приложение в начальное состояние."""
+    global scores
+    scores = []
+    reset_fields()
 
-    popup = Popup(title="Выберите CSV файл", content=saver, size_hint=(0.9, 0.9))
-    popup.open()
-
-# Основная функция, создающая интерфейс
 def build_interface():
+    """Создает интерфейс приложения."""
     global participant1_label, participant2_label, score_entries
 
     layout = BoxLayout(orientation='vertical')
-    header_layout = GridLayout(cols=3, size_hint_y=None, height=50)
+    header_layout = GridLayout(cols=2, size_hint_y=None, height=50)
 
-    # Метки для отображения текущих участников
-    participant1_label = Label(text="Участник 1", font_size=40)
-    middle_label = Label(text="VS", font_size=40)
-    participant2_label = Label(text="Участник 2", font_size=40)
+    # Поля для ввода номеров участников
+    participant1_label = TextInput(hint_text="Участник 1", font_size=40, multiline=False)
+    participant2_label = TextInput(hint_text="Участник 2", font_size=40, multiline=False)
 
     header_layout.add_widget(participant1_label)
-    header_layout.add_widget(middle_label)
     header_layout.add_widget(participant2_label)
 
     layout.add_widget(header_layout)
 
-    # Инициализация словаря для полей участников
-    score_entries = {}
+    # Поля для ввода оценок
+    score_entries = {
+        "Участник 1": {},
+        "Участник 2": {}
+    }
     fields = ['Входы', 'Тактика', 'Акробатика', 'Дистанция', 'Техника']
 
-
-    score_entries["Участник 1"] = {}
-    score_entries["Участник 2"] = {}
-
     for field in fields:
-        grid = GridLayout(cols=6, size_hint_y=None, height=200, width=300)
-        for i, participant in enumerate(["Участник 1", "Участник 2"]):
-            if i == 0:
-
+        grid = GridLayout(cols=4, size_hint_y=None, height=200)
+        for participant in ["Участник 1", "Участник 2"]:
+            if participant == "Участник 1":
                 # Поле для ввода числового значения
                 entry = TextInput(text='0', multiline=False, input_filter='int',size_hint_x=None , width=100, halign="center")
                 score_entries[participant][field] = entry
@@ -202,7 +138,6 @@ def build_interface():
                 increment_layout.add_widget(entry)
                 increment_layout.add_widget(minus_button)
                 grid.add_widget(increment_layout)
-
 
             else:
                 # Метка для названия поля
@@ -224,38 +159,27 @@ def build_interface():
                 increment_layout.add_widget(entry)
                 increment_layout.add_widget(plus_button)
                 grid.add_widget(increment_layout)
+
         layout.add_widget(grid)
 
-    
-
-
-    # Кнопка для загрузки CSV файла
-    load_button = Button(text="Загрузить CSV")
-    load_button.bind(on_press=load_csv_file)
-    layout.add_widget(load_button)
-    
-    # Кнопка "Далее" для перехода к следующей паре
+    # Кнопка "Далее"
     next_button = Button(text="Далее")
-    next_button.bind(on_press=next_pair)
+    next_button.bind(on_press=lambda x: save_current_pair())
     layout.add_widget(next_button)
+
+    # Кнопка "Сохранить"
+    save_button = Button(text="Сохранить")
+    save_button.bind(on_press=lambda x: save_results_to_csv())
+    layout.add_widget(save_button)
 
     return layout
 
-# Определение приложения
 class ParticipantScoringApp(App):
     def build(self):
         return build_interface()
 
 # Запуск приложения
 ParticipantScoringApp().run()
-
-
-
-
-
-
-
-
 
 
 
