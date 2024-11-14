@@ -9,7 +9,9 @@ jobs:
     steps:
     
       - name: Install OpenJDK
-        run: sudo apt-get install -y openjdk-11-jdk
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jdk
 
       - name: Install Android SDK
         run: |
