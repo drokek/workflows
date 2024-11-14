@@ -13,6 +13,9 @@ jobs:
       - name: Update package list
         run: sudo apt-get update
 
+      - name: Install git
+        run: sudo apt-get install -y git
+
       - name: Install tar
         run: sudo apt-get install -y tar
     
