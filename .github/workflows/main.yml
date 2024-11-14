@@ -7,6 +7,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      - name: Update package list
+        run: sudo atp-get update
+
+      - name: Install tar
+        run: sudo apt-get install -y tar
     
       - name: Install OpenJDK
         run: |
