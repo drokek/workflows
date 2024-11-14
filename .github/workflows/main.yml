@@ -7,20 +7,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
+      - name: Checkout current repository
+        uses: actions/checkout@v3
+        
       - name: Update package list
-        run: sudo apt-get update
-
-      - name: Add /usr/bin to PATH
-        run: echo "/usr/bin" >> $GITHUB_PATH
+        run: apt-get update
 
       - name: Install tar
-        run: sudo apt-get install -y tar
+        run: apt-get install -y tar
     
       - name: Install OpenJDK
         run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-11-jdk
+          apt-get update
+          apt-get install -y openjdk-11-jdk
 
       - name: Install Android SDK
         run: |
@@ -35,15 +34,11 @@ jobs:
         run: |
           echo "ANDROID_HOME=$HOME/cmdline-tools" >> $GITHUB_ENV
           echo "PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/30.0.3:\$PATH" >> $GITHUB_ENV
-          
-      - name: Checkout current repository
-        uses: actions/checkout@v3
-        
+
       - name: Clone additional repository
         run: git clone https://github.com/drokek/workflows other-repo
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 
       - name: List files in other-repo directory
         run: ls -la other-repo
@@ -54,5 +49,4 @@ jobs:
         with:
           command: "android debug"
           workdir: ./other-repo  # Путь к клонированному репозиторию
-
           
