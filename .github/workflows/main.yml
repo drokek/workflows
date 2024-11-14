@@ -43,3 +43,5 @@ jobs:
         with:
           command: "android debug"
           workdir: ./other-repo  # Путь к клонированному репозиторию
+
+          
