@@ -4,17 +4,22 @@ on: [push, pull_request]
 jobs:
   build-android:
     name: Build for Android
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Убедитесь, что используется стандартная среда
 
     steps:
       - name: Checkout current repository
         uses: actions/checkout@v3
 
+      - name: Check if git is installed
+        run: git --version || echo "git is not installed"
+
+      - name: Install git (if not found)
+        run: |
+          apt-get update
+          apt-get install -y git
+
       - name: Update package list
         run: sudo apt-get update
-
-      - name: Install git
-        run: sudo apt-get install -y git
 
       - name: Install tar
         run: sudo apt-get install -y tar
@@ -52,4 +57,3 @@ jobs:
         with:
           command: "android debug"
           workdir: ./other-repo  # Путь к клонированному репозиторию
-          
